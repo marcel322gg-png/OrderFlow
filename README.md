@@ -161,10 +161,12 @@ More context: [Portfolio case study](docs/PORTFOLIO.md) · [Published repository
 
 [Browse the screenshot gallery](OrderFlow-Screenshots/index.html)
 
+![RalseiFlow API v1 documentation with the branded definition selector and endpoint groups](OrderFlow-Screenshots/01-swagger-overview.png)
+
 ![RalseiFlow dashboard with recent work and live stock levels](OrderFlow-Screenshots/03-dashboard.png)
 
 ![RalseiFlow order details and persisted status history](OrderFlow-Screenshots/09-order-lifecycle.png)
 
 ![RalseiFlow date-filtered sales analytics](OrderFlow-Screenshots/10-analytics.png)
 
-[Swagger API overview](OrderFlow-Screenshots/13-swagger-ralseiflow.png) · [Full order details](OrderFlow-Screenshots/08-order-details-history.png) · [Docker runtime](OrderFlow-Screenshots/11-docker-runtime.png) · [Live database schema](OrderFlow-Screenshots/12-postgresql-schema.png)
+[Swagger API overview](OrderFlow-Screenshots/01-swagger-overview.png) · [Full order details](OrderFlow-Screenshots/08-order-details-history.png) · [Docker runtime](OrderFlow-Screenshots/11-docker-runtime.png) · [Live database schema](OrderFlow-Screenshots/12-postgresql-schema.png)

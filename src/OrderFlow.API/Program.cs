@@ -75,7 +75,7 @@ app.UseSerilogRequestLogging();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "RalseiFlow API v1"));
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", async (OrderFlowDbContext db, CancellationToken ct) =>
