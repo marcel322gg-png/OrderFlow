@@ -1,0 +1,31 @@
+PROJECT TITLE
+RalseiFlow — Orders, stock & business — in one place.
+
+SHORT DESCRIPTION
+An independent full-stack application for managing customers, products, orders, and inventory in one workspace. RalseiFlow connects order activity with stock movements and date-filtered sales summaries.
+
+FULL PROJECT OVERVIEW
+RalseiFlow is an independent full-stack application for managing customer records, products, orders, and inventory from one workspace. It brings order activity, available stock, and sales reporting together so day-to-day operations can be followed in context.
+
+Orders use product prices stored on the server. Stock is reserved when an order is placed, and status changes are kept in an order history. Staff can record stock receipts and review inventory movements, while administrators and employees receive access according to their roles. Date-filtered analytics summarize order and sales information.
+
+The application pairs a React and TypeScript interface with an ASP.NET Core REST API and PostgreSQL. It supports local deployment with Docker Compose. This is a tested portfolio project with local demonstration records, not a claim of commercial deployment, customers, or business results.
+
+MAIN FEATURES
+- Customer and product management.
+- Order creation with server-side price calculation.
+- Order status lifecycle and history.
+- Stock reservation, release on cancellation, and fulfillment movements.
+- Inventory receipts and transaction history.
+- Admin and Employee role-based access.
+- Sales analytics with date filtering.
+- REST API backed by PostgreSQL; local Docker Compose setup.
+
+TECHNOLOGY STACK
+C#, .NET 10, ASP.NET Core, Entity Framework Core, PostgreSQL, React, TypeScript, Vite, JWT authentication, role-based authorization, Docker Compose, FluentValidation, Serilog, Swagger, xUnit.
+
+MY INVOLVEMENT / DEVELOPMENT APPROACH
+Independent portfolio project with AI-assisted implementation. Development was iterative across the interface, API and database integration, behavior checks, and documentation. The work was reviewed through builds, automated tests, and local application checks; it does not imply that every line was written without assistance.
+
+PROJECT STATUS
+Completed portfolio project. Release builds and the automated test suite pass; Docker Compose configuration and local API health have been verified. It is a local demonstration project, not a confirmed commercial deployment.
