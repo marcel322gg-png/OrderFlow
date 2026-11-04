@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/TestResults/
+.dotnet-home/
+.tools/
+.git/
+.env
+.local-credentials.txt
+*.user
+*.suo

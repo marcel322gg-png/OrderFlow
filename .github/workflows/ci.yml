@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore OrderFlow.slnx
+      - run: dotnet build OrderFlow.slnx -c Release --no-restore
+      - run: dotnet test OrderFlow.slnx -c Release --no-build
+      - run: docker compose config --quiet
+        env:
+          POSTGRES_PASSWORD: ci-placeholder-only
+          JWT_SIGNING_KEY: ci-placeholder-signing-key-not-used-in-build-123456
+      - run: docker compose build api
+        env:
+          POSTGRES_PASSWORD: ci-placeholder-only
+          JWT_SIGNING_KEY: ci-placeholder-signing-key-not-used-in-build-123456
