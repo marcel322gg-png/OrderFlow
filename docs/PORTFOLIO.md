@@ -1,46 +1,46 @@
-# OrderFlow | Portfolio Case Study
+# RalseiFlow | Portfolio Case Study
 
-## Summary
+**Project:** Order, stock and business management workspace
 
-OrderFlow is a locally runnable order-management REST API built with ASP.NET Core, PostgreSQL, and Docker Compose. It demonstrates a small-business workflow from catalog and inventory management through order fulfillment and sales reporting.
+**Stack:** React, TypeScript, C#, .NET 10, ASP.NET Core, PostgreSQL, EF Core, JWT, Docker Compose
+**Repository:** [github.com/marcel322gg-png/OrderFlow](https://github.com/marcel322gg-png/OrderFlow)
 
-## Problem and solution
+## Overview
 
-Order workflows need consistent prices, inventory reservations, auditable stock movements, and valid status transitions. OrderFlow centralizes these rules in a domain model and persists operations through EF Core transactions.
+RalseiFlow is a branded workspace for customer and product records, stock movements, order fulfillment, and sales summaries. Its responsive React interface connects to an ASP.NET Core API and PostgreSQL database. The design uses warm ivory, forest green, sage, and terracotta with Space Grotesk, DM Sans, and IBM Plex Mono.
 
-## Architecture and technologies
+## Business value
 
-- .NET 10, ASP.NET Core Web API, C#
-- ASP.NET Core Identity, JWT bearer authentication, Admin and Employee roles
-- EF Core 10, PostgreSQL, database migrations
-- FluentValidation, ProblemDetails, Serilog, Swagger/OpenAPI
-- Docker Compose and xUnit
+Orders use current product prices supplied by the server, reserve available stock, and follow an explicit lifecycle. Inventory movements and order status changes are recorded, giving operators an API-level history of receipts, reservations, releases, fulfillment, and cancellation.
 
-See README.md for architecture, data model, setup, and endpoint details.
+## Capabilities
 
-## Demonstrated workflows
+- JWT login and Identity-backed users with Employee and Admin roles.
+- Customer and product CRUD, searching, sorting, and bounded pagination.
+- Multi-item orders with server-calculated totals and stock reservation.
+- Validated status changes and order history.
+- Stock receipts, reservation release, fulfillment adjustment, and transaction history.
+- Date-filtered sales analytics.
+- Dashboard metrics, recent orders, and low-stock watch sourced from the API.
+- Responsive UI with loading/error feedback, confirmation prompts, and role-aware controls.
+- Swagger/OpenAPI, ProblemDetails, request logging, and health endpoint.
 
-- Register and authenticate employees; bootstrap an administrator from local environment configuration.
-- Manage customers and products, record receipts, reserve stock for orders, and release reservations on cancellation.
-- Enforce order transitions and record status and inventory history.
-- Calculate totals from server-side product prices and report sales analytics.
+## Architecture
 
-The local smoke workflow exercises authentication, catalog creation, receipts, order pricing and reservation, status changes, cancellation, inventory history, and analytics against a local database volume.
+The API project handles HTTP, authentication, and composition. Application defines contracts and validation; Domain owns entities and business rules; Infrastructure implements services and PostgreSQL persistence through EF Core. Docker Compose runs the API and database locally.
 
-## Verification
+## Run and inspect
 
-The latest local verification passed the Release build with zero warnings or errors, 12 unit tests, PostgreSQL and API health checks, three recorded EF migrations, HTTP 200 from `/health` and Swagger, and the end-to-end smoke workflow.
+On Windows, start with `RUNLOCALLY.bat`; on Linux, use `./RUNLOCALLY.sh`. The workflow provisions local-only credentials, waits for database readiness, applies migrations, checks API health, and runs smoke checks. Browse the application at `http://localhost:8080/` and the API at `http://localhost:8080/swagger`. See the root README for configuration and examples.
+
+## Testing and verification
+
+Release verification passed: .NET build completed with 0 warnings and errors, all 13 unit tests passed, and the frontend production build completed with no reported npm vulnerabilities. Docker rebuilt the API image; PostgreSQL and API health checks passed, and the live OpenAPI document identifies `RalseiFlow API`. The local smoke workflow also passed authentication, catalogue, inventory, order lifecycle, history, and analytics checks. This case study does not imply a production deployment.
 
 ## Screenshots
 
-Screenshots have not yet been captured. Add genuine screenshots from a running instance before presenting a visual demo.
-
-## Fiverr portfolio description
-
-Built OrderFlow, a .NET order-management API with PostgreSQL persistence, JWT authentication, role-based access, inventory reservations, order lifecycle rules, audit history, analytics, Docker-based local setup, and automated tests. Includes Swagger documentation and reproducible local smoke validation.
+Browse the [RalseiFlow screenshot gallery](../OrderFlow-Screenshots/index.html) for genuine captures from the running local application, Swagger, database, and container runtime.
 
 ## Limitations
 
-- Automated tests are unit tests; database-backed API behavior is covered by local smoke validation rather than a dedicated integration-test project.
-- No public deployment or production usage is claimed.
-- No public repository URL is available until GitHub publication is completed.
+Dedicated automated API integration tests and concurrency stress tests are not included. This is a portfolio project; no commercial clients, revenue, or production usage are claimed.

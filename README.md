@@ -1,65 +1,22 @@
-# OrderFlow
+# RalseiFlow
 
-OrderFlow is a REST API for customer, catalog, stock, order, and sales operations for small and medium businesses. It uses .NET 10, ASP.NET Core Identity, JWT bearer authentication, EF Core, and PostgreSQL.
+**Orders, stock & business — in one place.** RalseiFlow is a small-business workspace for customers, products, inventory, order fulfillment, and sales reporting. Its React interface runs on an ASP.NET Core API backed by PostgreSQL.
 
-## Running Locally
+## What it demonstrates
 
-**Windows 11**
-
-1. Install Docker Desktop and launch it once.
-2. Clone or extract this repository.
-3. Double-click `RUNLOCALLY.bat`.
-4. Open [http://localhost:8080/swagger](http://localhost:8080/swagger).
-
-**Linux**
-
-1. Install Docker Engine, Docker Compose v2, `curl`, and OpenSSL.
-2. Clone this repository.
-3. Run `chmod +x RUNLOCALLY.sh` once, then `./RUNLOCALLY.sh`.
-4. Open [http://localhost:8080/swagger](http://localhost:8080/swagger).
-
-RUNLOCALLY checks Docker and the selected ports, creates a private `.env` from `.env.example` when needed, generates random local secrets and a one-time administrator password, builds the API image, waits for PostgreSQL, applies EF Core migrations, waits for database-backed API health, and runs API smoke checks. Generated administrator credentials are saved in `.local-credentials.txt`; keep it private. Neither file is committed. No .NET SDK or PostgreSQL installation is needed for Docker startup.
-
-The containers are the API and PostgreSQL. PostgreSQL data lives in the named `orderflow_postgres-data` volume. `STOPLOCALLY.bat` stops the services without removing that volume; `RUNLOCALLY.bat -Action Restart` restarts services and verifies that existing orders remain in the database. Use `RUNLOCALLY.bat -Action Status` to inspect state and `RUNLOCALLY.bat -Action Logs` to follow logs. On Linux, pass the same modes to `./RUNLOCALLY.sh`.
-
-`TESTLOCALLY.bat` restores dependencies, builds Release, and runs the test suite. It uses the host .NET SDK when present, otherwise the official .NET 10 SDK container. Test output is saved under `TestResults/`. Tests currently use domain-level unit coverage and do not require or modify the development database.
-
-To use different ports, edit `ORDERFLOW_API_PORT` or `POSTGRES_PORT` in `.env`. If a port is occupied, RUNLOCALLY reports the port and leaves existing services and data untouched. For local Docker Desktop installation, RUNLOCALLY offers the official `winget` package and proceeds only after explicit confirmation. If Docker Desktop needs a restart or manual first launch, the script explains that before exiting.
-
-**Troubleshooting:** Start Docker Desktop and wait for its engine indicator before retrying. If the API image build fails, check internet access for NuGet and the .NET container image registry. For database/API startup details, run `RUNLOCALLY.bat -Action Logs`. Do not remove the named PostgreSQL volume unless you intentionally want to destroy local records.
-
-The local environment does not require a GitHub account or a public repository.
-
-## Features
-
-- Customer and product CRUD with search, sorting, and bounded pagination.
-- Unique customer email and product SKU constraints.
-- JWT access tokens, Identity password hashing, and Admin / Employee roles.
-- Server-priced multi-line orders with stock reservations and persisted status history.
-- Validated status transitions: Pending → Confirmed → Processing → Shipped → Delivered; cancellation is allowed before shipment.
-- Stock receipts and reservation/release/fulfillment ledger entries.
-- Date-filtered sales totals, average order value, cancelled orders, and popular products.
-- ProblemDetails error responses, request correlation through trace IDs, and structured Serilog request logs.
+- Responsive React workspace with a live operations overview, role-aware navigation, inline order history, stock receipts, and date-filtered analytics.
+- Employee registration and JWT authentication with Admin and Employee roles.
+- Customer and product management with search, sorting, pagination, and uniqueness constraints.
+- Server-side order pricing, stock reservation, validated status transitions, and persisted history.
+- Inventory receipts, releases, fulfillment adjustments, and transaction history.
+- Date-filtered sales analytics.
+- PostgreSQL persistence, EF Core migrations, structured request logging, and ProblemDetails errors.
 
 ## Technology and architecture
 
-- .NET 10 / ASP.NET Core Web API
-- EF Core 10 and Npgsql 10 / PostgreSQL
-- ASP.NET Core Identity and JWT bearer tokens
-- FluentValidation, Serilog, Swagger / OpenAPI, xUnit
-- Docker Compose
+.NET 10, ASP.NET Core, EF Core/Npgsql, PostgreSQL, ASP.NET Core Identity, JWT, FluentValidation, Serilog, Swagger/OpenAPI, Docker Compose, and xUnit.
 
-```mermaid
-flowchart LR
-  Client --> API[OrderFlow.API<br/>Controllers, auth, errors]
-  API --> App[OrderFlow.Application<br/>Contracts, validators, use cases]
-  App --> Domain[OrderFlow.Domain<br/>Entities and business rules]
-  API --> Infra[OrderFlow.Infrastructure<br/>EF Core, Identity, services]
-  Infra --> Domain
-  Infra --> DB[(PostgreSQL)]
-```
-
-The API depends on Application and Infrastructure. Infrastructure implements application contracts and persists Domain entities. Domain contains no API or persistence dependencies.
+The React and TypeScript frontend is served by the API at `/`. The API exposes controllers and authentication; Application defines contracts and validation; Domain owns business rules; Infrastructure implements persistence and services. Swagger is served at `/swagger`.
 
 ## Database structure
 
@@ -67,101 +24,103 @@ The API depends on Application and Infrastructure. Infrastructure implements app
 erDiagram
   CUSTOMER ||--o{ ORDER : places
   ORDER ||--|{ ORDER_ITEM : contains
-  PRODUCT ||--o{ ORDER_ITEM : priced_as
+  PRODUCT ||--o{ ORDER_ITEM : appears_in
   ORDER ||--o{ ORDER_STATUS_HISTORY : records
-  PRODUCT ||--o{ INVENTORY_TRANSACTION : moves
-  CUSTOMER { uuid id PK; string name; string email UK }
-  PRODUCT { uuid id PK; string sku UK; decimal price; int stockOnHand; int reservedStock }
-  ORDER { uuid id PK; uuid customerId FK; string status; datetime createdAtUtc }
-  ORDER_ITEM { uuid id PK; uuid orderId FK; uuid productId; int quantity; decimal unitPrice }
-  ORDER_STATUS_HISTORY { uuid id PK; uuid orderId FK; string status; datetime changedAtUtc }
-  INVENTORY_TRANSACTION { uuid id PK; uuid productId; string type; int quantity; datetime createdAtUtc }
+  PRODUCT ||--o{ INVENTORY_TRANSACTION : tracks
+
+  CUSTOMER {
+    uuid id PK
+    string name "required"
+    string email UK "required, normalized"
+    string phone "optional"
+    datetime createdAtUtc
+  }
+  PRODUCT {
+    uuid id PK
+    string sku UK "required, uppercase"
+    string name "required"
+    string description "optional"
+    decimal price "non-negative"
+    int stockOnHand "non-negative"
+    int reservedStock "cannot exceed stockOnHand"
+    bool isAvailable
+    int version "concurrency token"
+  }
+  ORDER {
+    uuid id PK
+    uuid customerId FK "required, restrict delete"
+    string status "validated transitions"
+    datetime createdAtUtc
+    int version "concurrency token"
+  }
+  ORDER_ITEM {
+    uuid id PK
+    uuid orderId FK "required, cascade delete"
+    uuid productId FK "required, restrict delete"
+    int quantity "positive"
+    decimal unitPrice "price snapshot"
+  }
+  ORDER_STATUS_HISTORY {
+    uuid id PK
+    uuid orderId FK "required, cascade delete"
+    string status
+    datetime changedAtUtc
+  }
+  INVENTORY_TRANSACTION {
+    uuid id PK
+    uuid productId FK "required, restrict delete"
+    string type
+    int quantity "positive"
+    string reference "optional"
+    datetime createdAtUtc
+  }
 ```
 
-Identity tables are supplied by ASP.NET Core Identity. The initial EF Core migration is applied at API startup. Schema changes should be added as reviewed migrations and committed with the source.
+The diagram shows the application-owned business tables. ASP.NET Core Identity also creates its standard user, role, claim, login, token, and user-role tables. EF Core migrations define the deployed schema and its indexes.
+
+## Run locally
+
+Requirements: Docker Desktop on Windows, or Docker Engine and Compose on Linux.
+
+**Recommended startup:** On Windows, run `RUNLOCALLY.bat`. On Linux, run `chmod +x RUNLOCALLY.sh` once, then `./RUNLOCALLY.sh`. Each script builds and starts the frontend, API, and PostgreSQL, waits for database readiness, and runs the configured startup checks; do not run a second `docker compose up` afterward. Open [RalseiFlow](http://localhost:8080/) or [Swagger](http://localhost:8080/swagger).
+
+The scripts prepare a private `.env`, generate local credentials, apply migrations, and check API health. Administrator credentials are stored in `.local-credentials.txt`; keep it private. PostgreSQL data persists in `orderflow_postgres-data`. `STOPLOCALLY.bat` stops services without deleting the volume.
+
+**Manual Compose alternative:** Create and populate `.env` using the variable names in `.env.example`, then run `docker compose up --build`. Compose starts the API and database; the API applies EF Core migrations during startup. This alternative does not run the startup scripts' readiness verification and API smoke checks. The current automatic migration and bootstrap setup is intended for local/demo use; production deployments should apply reviewed migrations through a controlled release process and use production-grade secret provisioning.
+
+The API and database ports can be changed in `.env` using `ORDERFLOW_API_PORT` and `POSTGRES_PORT`. Do not commit `.env` or local credentials.
+
+## Authentication and access
+
+Registration and login are public; registration creates Employee accounts. Customer endpoints require authentication, with customer deletion restricted to Admin. Product reads require authentication; product creation, updates, and deletion require Admin. Inventory endpoints allow Admin and Employee. Order endpoints require authentication. Sales analytics requires Admin. These are the controller authorization rules; consult Swagger for operation schemas.
 
 ## API endpoints
 
 | Method | Endpoint | Access |
 |---|---|---|
-| POST | `/api/auth/register` | Public; creates Employee |
+| POST | `/api/auth/register` | Public |
 | POST | `/api/auth/login` | Public |
-| GET / POST | `/api/customers` | Authenticated / Authenticated |
-| GET / PUT / DELETE | `/api/customers/{id}` | Authenticated / Authenticated / Admin |
-| GET | `/api/products` | Authenticated |
-| GET / POST / PUT / DELETE | `/api/products/{id}` and `/api/products` | Authenticated reads; Admin writes |
+| GET | `/api/customers` and `/api/customers/{id}` | Authenticated |
+| POST | `/api/customers` | Authenticated |
+| PUT | `/api/customers/{id}` | Authenticated |
+| DELETE | `/api/customers/{id}` | Admin |
+| GET | `/api/products` and `/api/products/{id}` | Authenticated |
+| POST | `/api/products` | Admin |
+| PUT | `/api/products/{id}` | Admin |
+| DELETE | `/api/products/{id}` | Admin |
 | GET | `/api/inventory/products/{productId}/transactions` | Admin or Employee |
-| POST | `/api/inventory/transactions` | Admin or Employee; receipts only |
-| GET / POST | `/api/orders` | Authenticated; list supports customer/status filters and pagination |
-| GET | `/api/orders/{id}` | Authenticated |
-| GET | `/api/orders/{id}/history` | Authenticated |
+| POST | `/api/inventory/transactions` | Admin or Employee |
+| GET | `/api/orders` | Authenticated |
+| POST | `/api/orders` | Authenticated |
+| GET | `/api/orders/{id}` and `/api/orders/{id}/history` | Authenticated |
 | PATCH | `/api/orders/{id}/status` | Authenticated |
-| GET | `/api/analytics/overview?from=...&to=...` | Admin |
+| GET | `/api/analytics/overview` | Admin |
 
-Swagger UI is available at `/swagger`.
+## API example
 
-## Local configuration
+Register an Employee, then log in at `POST /api/auth/login` and use the returned access token for authorized calls. Public registration creates Employee accounts; administrator provisioning uses bootstrap configuration.
 
-The API reads standard ASP.NET Core environment variables. Set a strong signing key of at least 32 bytes, and configure a PostgreSQL connection string:
-
-```powershell
-$env:ConnectionStrings__Default = 'Host=localhost;Port=5432;Database=orderflow;Username=orderflow;Password=<your-private-password>'
-$env:Jwt__SigningKey = 'replace-with-a-random-secret-of-at-least-32-bytes'
-$env:Jwt__Issuer = 'OrderFlow'
-$env:Jwt__Audience = 'OrderFlow.Client'
-```
-
-To provision the first administrator, set `BootstrapAdmin__Email` and `BootstrapAdmin__Password` before startup. Public registration can only create Employee accounts. No signing key or bootstrap credentials are committed.
-
-## Run with Docker Compose manually
-
-Create a local `.env` file (do not commit it):
-
-```dotenv
-POSTGRES_PASSWORD=<your-private-database-password>
-JWT_SIGNING_KEY=<a-random-secret-of-at-least-32-bytes>
-BOOTSTRAP_ADMIN_EMAIL=admin@example.com
-BOOTSTRAP_ADMIN_PASSWORD=<your-private-admin-password>
-```
-
-When running the API directly (without Compose), provide `BootstrapAdmin__Email` and `BootstrapAdmin__Password` as environment variables.
-
-Then start the API and PostgreSQL. On first run, use RUNLOCALLY to generate secure credentials and run the health and API checks; direct Compose startup requires a fully populated `.env` file:
-
-```bash
-docker compose up --build
-```
-
-Compose waits for PostgreSQL's health check before starting the API. PostgreSQL data persists in the `orderflow_postgres-data` volume. Open `http://localhost:8080/swagger`.
-
-For a local SDK run, start PostgreSQL with `docker compose up -d db`, set the environment variables above, then run:
-
-```bash
-dotnet run --project src/OrderFlow.API
-```
-
-## Example requests
-
-Register an employee:
-
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{"email":"employee@example.com","password":"<your-private-password>","displayName":"Alex"}
-```
-
-Create a customer with a returned bearer token:
-
-```http
-POST /api/customers
-Authorization: Bearer <access-token>
-Content-Type: application/json
-
-{"name":"Northwind Traders","email":"orders@northwind.example","phone":"+1-555-0100"}
-```
-
-Create an order; the submitted request contains product IDs and quantities only. The API snapshots current prices and reserves stock:
+Create an order with a customer and product GUIDs:
 
 ```http
 POST /api/orders
@@ -171,20 +130,41 @@ Content-Type: application/json
 {"customerId":"<customer-guid>","items":[{"productId":"<product-guid>","quantity":2}]}
 ```
 
-## Tests
+The API obtains prices from stored product records and reserves available stock. See Swagger for request/response schemas and the full endpoint list.
 
-```bash
-dotnet test OrderFlow.slnx
-```
+## Verification
 
-Domain tests cover server-side totals, stock reservations, negative values, valid transitions, and rejected transitions. API integration tests and concurrency stress tests are not included yet.
+Run `TESTLOCALLY.bat` on Windows or `./RUNLOCALLY.sh Test` on Linux. The test project currently provides domain and validator unit tests; the local startup smoke workflow exercises API and database workflows. Dedicated automated API integration and concurrency stress suites are not included.
 
-## Repository layout
+Verified for this revision:
 
-```text
-src/OrderFlow.API/             HTTP endpoints, auth, middleware, configuration
-src/OrderFlow.Application/     DTOs, contracts, validation
-src/OrderFlow.Domain/          Entities and business rules
-src/OrderFlow.Infrastructure/  EF Core, PostgreSQL, Identity, implementations
-tests/OrderFlow.Tests/         Domain unit tests
-```
+- `dotnet build OrderFlow.slnx --configuration Release --no-restore` — passed with 0 warnings and 0 errors.
+- `dotnet test OrderFlow.slnx --configuration Release --no-build` — 13 passed, 0 failed.
+- `npm ci` and `npm run build` — passed; npm reported 0 vulnerabilities.
+- `docker compose build api` — passed, including the frontend production build.
+- Docker PostgreSQL and API containers reported healthy; `/health` returned `Healthy`, and `/swagger/v1/swagger.json` reported `RalseiFlow API`.
+- `RUNLOCALLY.ps1 -Action Start` smoke checks passed for login/registration, customer/product creation, stock receipt, order pricing and reservations, status changes, cancellation release, history, and analytics.
+
+The automated suite is domain-level unit coverage; the local Compose smoke workflow covers the main authenticated API/database paths. Dedicated load and concurrency stress suites are not included.
+
+## Limitations
+
+This is a portfolio implementation, not a production deployment. Automated integration and load testing are limited; operational hardening for a public production service is outside the project scope. No commercial customers or production usage are claimed.
+
+## Project structure
+
+`src/OrderFlow.API` hosts HTTP endpoints; `Application` contains contracts and validation; `Domain` contains entities and rules; `Infrastructure` contains EF Core and service implementations; `tests/OrderFlow.Tests` contains automated tests.
+
+More context: [Portfolio case study](docs/PORTFOLIO.md) · [Published repository](https://github.com/marcel322gg-png/OrderFlow).
+
+## Screenshots
+
+[Browse the screenshot gallery](OrderFlow-Screenshots/index.html)
+
+![RalseiFlow dashboard with recent work and live stock levels](OrderFlow-Screenshots/03-dashboard.png)
+
+![RalseiFlow order details and persisted status history](OrderFlow-Screenshots/09-order-lifecycle.png)
+
+![RalseiFlow date-filtered sales analytics](OrderFlow-Screenshots/10-analytics.png)
+
+[Swagger API overview](OrderFlow-Screenshots/13-swagger-ralseiflow.png) · [Full order details](OrderFlow-Screenshots/08-order-details-history.png) · [Docker runtime](OrderFlow-Screenshots/11-docker-runtime.png) · [Live database schema](OrderFlow-Screenshots/12-postgresql-schema.png)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using OrderFlow.Application;
 using OrderFlow.API;
 using OrderFlow.Infrastructure;
@@ -17,7 +18,12 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new OpenApiInfo
+{
+    Title = "RalseiFlow API",
+    Version = "v1",
+    Description = "Orders, stock & business — in one place."
+}));
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Configure ConnectionStrings:Default.");
 builder.Services.AddDbContext<OrderFlowDbContext>(options =>
@@ -66,6 +72,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderValidator>();
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseAuthentication();
@@ -82,7 +90,7 @@ app.MapGet("/health", async (OrderFlowDbContext db, CancellationToken ct) =>
     {
         return Results.Problem("Database is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
     }
-});
+}).WithTags("System");
 app.MapControllers();
 await using (var scope = app.Services.CreateAsyncScope())
 {

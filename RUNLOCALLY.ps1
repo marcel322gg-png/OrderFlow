@@ -146,7 +146,15 @@ function Start-OrderFlow {
     if ($ExistingVolume) { Write-Host "Existing PostgreSQL volume '$ExistingVolume' will be preserved and reused." }
     foreach ($Port in @($ApiPort, $PgPort)) {
         if (-not (Test-PortAvailable $Port)) {
-            $ProjectOnPort = docker ps --filter "publish=$Port" --format '{{.Label "com.docker.compose.project"}}' 2>$null
+            # Avoid a nested-quote Go template in the native PowerShell argument.
+            # Read IDs with a simple format, then inspect each container's labels as JSON.
+            $PortContainerIds = @(docker ps --filter "publish=$Port" --format '{{.ID}}' 2>$null)
+            $ProjectOnPort = foreach ($ContainerId in $PortContainerIds) {
+                $LabelsJson = docker inspect --format '{{json .Config.Labels}}' $ContainerId 2>$null
+                if ($LabelsJson) {
+                    try { ($LabelsJson | ConvertFrom-Json).'com.docker.compose.project' } catch { $null }
+                }
+            }
             if ($ProjectOnPort -notcontains 'orderflow') { Fail "Port $Port is already in use. Change its value in .env or stop the other service." }
         }
     }

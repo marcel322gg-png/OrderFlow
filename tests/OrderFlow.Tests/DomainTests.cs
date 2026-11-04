@@ -23,6 +23,25 @@ public sealed class DomainTests
         order.ChangeStatus(OrderStatus.Confirmed); order.ChangeStatus(OrderStatus.Processing); order.ChangeStatus(OrderStatus.Shipped);
         Assert.Equal(OrderStatus.Shipped, order.Status); Assert.Equal(4, order.History.Count); Assert.Equal(3, order.Version);
     }
+
+    [Fact]
+    public void Order_can_be_cancelled_before_shipment_but_not_after_delivery()
+    {
+        var customer = new Customer("Ada", "ada@example.com");
+        var product = new Product("SKU-1", "Widget", 5m, 3);
+        var order = new Order(customer.Id, [(product, 1)]);
+
+        order.ChangeStatus(OrderStatus.Cancelled);
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        Assert.Throws<InvalidOperationException>(() => order.ChangeStatus(OrderStatus.Confirmed));
+
+        var delivered = new Order(customer.Id, [(product, 1)]);
+        delivered.ChangeStatus(OrderStatus.Confirmed);
+        delivered.ChangeStatus(OrderStatus.Processing);
+        delivered.ChangeStatus(OrderStatus.Shipped);
+        delivered.ChangeStatus(OrderStatus.Delivered);
+        Assert.Throws<InvalidOperationException>(() => delivered.ChangeStatus(OrderStatus.Cancelled));
+    }
     [Fact]
     public void Product_rejects_reservation_beyond_available_stock()
     {
